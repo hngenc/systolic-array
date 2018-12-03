@@ -5,7 +5,7 @@ trait Expr {
   def *(that: Expr) = Multiply(this, that)
 }
 
-case class Ref(local: Systolic#Local, direction: Seq[Int], fixed: Seq[Boolean], its: Seq[Systolic#Iterator])
+case class Ref(local: Systolic#Local, direction: Seq[Int], fixed: Seq[Boolean], its: Seq[Systolic#Iterator], maxes: Seq[Int])
   extends Expr {
 
   def :=(that: Expr): Unit = {

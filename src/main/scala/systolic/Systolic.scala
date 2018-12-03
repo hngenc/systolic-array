@@ -1,5 +1,6 @@
 package systolic
 
+import scala.collection.mutable
 import scala.collection.mutable.ArrayBuffer
 import chisel3._
 import chisel3.util._
@@ -37,22 +38,23 @@ class Systolic {
     var output: ORef = null
 
     def apply(its: Iterator*): Ref = {
-      new Ref(this, its.map(_.diff), its.map(_ => false), its)
+      new Ref(this, its.map(_.diff), its.map(_ => false), its, Seq.fill(its.size)(0))
     }
 
     def apply(it1: Iterator, num: Int, it2: Iterator): Ref = {
-      specific_domains ++= comb(Seq(bounds(0)._1 to bounds(0)._2, num to num, bounds(2)._1 to bounds(2)._2):_*)
-      new Ref(this, Seq(it1.diff, num, it2.diff), Seq(false, true, false), Seq(it1, null, it2))
+      new Ref(this, Seq(it1.diff, num, it2.diff), Seq(false, true, false), Seq(it1, null, it2), Seq(0, num, 0))
     }
 
     def apply(num: Int, it1: Iterator, it2: Iterator): Ref = {
-      specific_domains ++= comb(Seq(num to num, bounds(1)._1 to bounds(1)._2, bounds(2)._1 to bounds(2)._2):_*)
-      new Ref(this, Seq(num, it1.diff, it2.diff), Seq(true, false, false), Seq(null, it1, it2))
+      new Ref(this, Seq(num, it1.diff, it2.diff), Seq(true, false, false), Seq(null, it1, it2), Seq(num, 0, 0))
     }
 
     def apply(it1: Iterator, it2: Iterator, num: Int): Ref = {
-      specific_domains ++= comb(Seq(bounds(0)._1 to bounds(0)._2, bounds(1)._1 to bounds(1)._2, num to num):_*)
-      new Ref(this, Seq(it1.diff, it2.diff, num), Seq(false, false, true), Seq(it1, it2, null))
+      new Ref(this, Seq(it1.diff, it2.diff, num), Seq(false, false, true), Seq(it1, it2, null), Seq(0, 0, num))
+    }
+
+    def apply(it1: Iterator, it2: Iterator, nums: Tuple2[Int, Int]): Ref = {
+      new Ref(this, Seq(it1.diff, it2.diff, nums._1), Seq(false, false, true), Seq(it1, it2, null), Seq(0, 0, nums._2))
     }
   }
 
@@ -67,12 +69,48 @@ class Systolic {
   // Variables
   val bounds = ArrayBuffer.empty[Tuple2[Int, Int]]
   val locals = ArrayBuffer.empty[Local]
-  val specific_domains = ArrayBuffer.empty[Seq[Int]]
+  val fixed_directions = mutable.Map.empty[Local, Seq[Int]]
 
   var mod: Module = null
 
   // Methods
-  def spaceTimeTransform(matrix: Seq[Seq[Int]]): Unit = {
+  def fix(local: Local) {
+    fixed_directions(local) = Seq(0,0)
+  }
+
+  def flowR(local: Local) {
+    fixed_directions(local) = Seq(0, 1)
+  }
+
+  def flowD(local: Local) {
+    fixed_directions(local) = Seq(1, 0)
+  }
+
+  def flow(local: Local, dir: Tuple2[Int, Int]) {
+    fixed_directions(local) = Seq(dir._1, dir._2)
+  }
+
+  def getSpaceTimeTransform: Seq[Seq[Seq[Int]]] = {
+    val possibilities = comb(Seq.fill(6)(Seq(-1, 0, 1)): _*)
+    val dirs = fixed_directions.map{case (local, xy_d) =>
+      val it_d = dependencyvecs(local.calculation).collect{case (l, d) if l == local => d}.head
+      (it_d, xy_d)
+    }
+
+    val s = Seq(1,1,1)
+
+    possibilities.filter { p_ =>
+      val p = p_ take 6
+      val P = Seq(p.take(3), p.drop(3))
+      dirs.forall { case (it_d, xy_d) =>
+        val T = P :+ s
+        val detT = det(T)
+        matmul2(P, it_d) == xy_d && (detT == 1 || detT == -1)
+      }
+    }.map(_ take 6).map(seq => Seq(seq.take(3), seq.drop(3), s))
+  }
+
+  def spaceTimeTransform(matrix: Seq[Seq[Int]]) {
     val P = matrix.init
     val s = Seq(matrix.last)
 
@@ -94,18 +132,17 @@ class Systolic {
     val inputSeqs = ArrayBuffer.empty[Tuple4[Systolic#Input, Int, Seq[Int], Seq[Int]]]
     for (it_vec <- domain) {
       val xyt = matmul(matrix, Seq(it_vec).transpose).flatten
-      println(s"\tAt xyt: $xyt\tAt ijk: $it_vec")
+      // println(s"\tAt xyt: $xyt\tAt ijk: $it_vec")
 
       for (l <- locals.filter(_.input != null)) {
         val l_it = (it_vec, l.input.localRef.direction, l.input.localRef.fixed).zipped.map((i,d,f) => if (f) d else i)
-        val l_coord = matmul(matrix, Seq(l_it).transpose).flatten
 
-        if (l_coord == xyt) {
-          println(s"\t\t${l_coord.init}")
+        if (l_it == it_vec) {
+          // println(s"\t\t${l_coord.init}")
           val in_coord = l.input.its.map(it => (l.input.localRef.its zip it_vec).collect { case (jt, i) if it == jt => i }.head)
-          println(s"\t\t$in_coord")
+          // println(s"\t\t$in_coord")
 
-          inputSeqs += ((l.input.input, xyt.last, l_coord.init, in_coord))
+          inputSeqs += ((l.input.input, xyt.last, xyt.init, in_coord))
         }
       }
     }
@@ -119,18 +156,17 @@ class Systolic {
     val outputSeqs = ArrayBuffer.empty[Tuple4[Systolic#Output, Int, Seq[Int], Seq[Int]]]
     for (it_vec <- domain) {
       val xyt = matmul(matrix, Seq(it_vec).transpose).flatten
-      println(s"\tAt xyt: $xyt\tAt ijk: $it_vec")
+      // println(s"\tAt xyt: $xyt\tAt ijk: $it_vec")
 
       for (l <- locals.filter(_.output != null)) {
         val l_it = (it_vec, l.output.localRef.direction, l.output.localRef.fixed).zipped.map((i,d,f) => if (f) d else i)
-        val l_coord = matmul(matrix, Seq(l_it).transpose).flatten
 
-        if (l_coord == xyt) {
-          println(s"\t\t${l_coord.init}")
+        if (l_it == it_vec) {
+          // println(s"\t\t${l_coord.init}")
           val out_coord = l.output.its.map(it => (l.output.localRef.its zip it_vec).collect { case (jt, i) if it == jt => i }.head)
-          println(s"\t\t$out_coord")
+          // println(s"\t\t$out_coord")
 
-          outputSeqs += ((l.output.output, xyt.last, l_coord.init, out_coord))
+          outputSeqs += ((l.output.output, xyt.last, xyt.init, out_coord))
         }
       }
     }
@@ -257,8 +293,13 @@ class Systolic {
   val B = new Input(k, j)
   val C = new Output(i, j)
 
+  // Reaching stationaries
+  val S = new Input(k, j)
+
   val a, b = Local(16)
   val c = Local(32)
+
+  val s = Local(1)
 
   // Inputs
   a(i, 0, k) := A(i, k)
@@ -266,21 +307,29 @@ class Systolic {
   /* TODO
   c(i, j, 0) := 0
   */
+  // s(0, j, k) := S(k, j)
 
   // Calculations
   a(i, j, k) := a(i, j-1, k)
   b(i, j, k) := b(i-1, j, k)
   c(i, j, k) := c(i, j, k-1) + (a(i, j-1, k) * b(i-1, j, k))
+  /*
+  b(i, j, k) := SMux(s(i-1, j, k), c(i, j, k-1), b(i-1, j, k))
+  c(i, j, k) := SMux(s(i-1, j, k), b(i-1, j, k), c(i, j, k-1) + (a(i, j-1, k) * b(i-1, j, k)))
+  s(i, j, k) := s(i-1, j, k)
+  */
 
   // Outputs
   C(i, j) := c(i, j, N3)
 
   // Space-time transformation
+  /*
   // Output-stationary
   spaceTimeTransform(Seq(
     Seq(1,0,0),
     Seq(0,1,0),
     Seq(1,1,1)))
+  */
 
   /*
   // Hexagonal
@@ -305,6 +354,17 @@ class Systolic {
     Seq(0,0,0),
     Seq((N2+1)*(N3+1),(N3+1),1)))
   */
+
+  // fix(c)
+  // flowR(a)
+  // flowD(b)
+
+  fix(b)
+  flowD(c)
+  flowR(a)
+  val st = getSpaceTimeTransform
+  println(st)
+  println(st.map(det(_)))
 }
 
 object OutputStationary {

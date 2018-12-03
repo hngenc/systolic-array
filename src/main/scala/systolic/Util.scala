@@ -12,6 +12,8 @@ object Util {
         yield row zip col map Function.tupled(_*_) sum
   }
 
+  def matmul2[A: Numeric](a: Seq[Seq[A]], b: Seq[A]): Seq[A] = matmul(a, Seq(b).transpose).flatten
+
   def permutationsSgn[T]: List[T] => List[(Int,List[T])] = {
     case Nil => List((1,Nil))
     case xs => {
@@ -42,7 +44,8 @@ object Util {
   def dependencyvecs(e: Expr): Seq[Tuple2[Systolic#Local, Seq[Int]]] = e match {
     case Add(l, r) => dependencyvecs(l) ++ dependencyvecs(r)
     case Multiply(l, r) => dependencyvecs(l) ++ dependencyvecs(r)
-    case Ref(loc, dir, _, _) => Seq((loc, dir.map(-_)))
-    case _ => throw new Exception("unknown in dep vec")
+    case SMux(c, t, f) => dependencyvecs(c) ++ dependencyvecs(t) ++ dependencyvecs(f)
+    case Ref(loc, dir, _, _, _) => Seq((loc, dir.map(-_)))
+    case _ => throw new Exception(s"unknown in dep vec ${e.getClass}")
   }
 }
