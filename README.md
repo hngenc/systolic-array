@@ -109,11 +109,40 @@ The power of these spacetime transforms quickly becomes apparent. Simply by modi
 
 * Output-stationary matrix multiply:
 
-  ![Output-stationary spacetime transformation](https://latex.codecogs.com/gif.download?T%20%3D%20%5Cbegin%7Bbmatrix%7D%201%20%26%200%20%26%200%20%5C%5C%200%20%26%201%20%26%200%20%5C%5C%201%20%26%201%20%26%201%20%5C%5C%20%5Cend%7Bbmatrix%7D)
+  ![Output-stationary spacetime transformation](images/output-stationary-transform.gif)
   
   ![Output-stationary systolic array](images/output-stationary.png)
 
+* Weight-stationary matrix multiply:
+  
+  ![Weight-stationary spacetime transformation](images/weight-stationary-transform.gif)
+  
+  ![Weight-stationary systolic array](images/weight-stationary.png)
+
+* Hexagonal matrix multiply:
+
+  ![Hexagonal-stationary spacetime transformation](images/hexagonal-transform.gif)
+  
+  ![Hexagonal-stationary systolic array](images/hexagonal.png)
+
+Although all three examples above may ultimately compute the same outputs, they do so in very different ways. Not only do they differ in size or shape, but they also differ in how partial results "flow" throughout the array. In the first example, partial sums of _C_ are fixed to specific PEs, and accumulate in place, while in the others, the partial sums travel across the array, before exiting at the edges. Based on your particular objectives or limitations, one strategy may be more attractive than another.
+
+The language provided requires users to specify the particular spacetime transformation they wish to apply to their functional algorithm:
+
+```scala
+class MatMul extends Systolic {
+  // Functional algorithm, as shown above
+  // ...
+  
+  // Output stationary spacetime transform
+  spaceTimeTransform(Seq(
+    Seq(1,0,0),
+    Seq(0,1,0),
+    Seq(1,1,1)))
+```
+
 ### Constraints
+
 
 ## Compiler Output
 
