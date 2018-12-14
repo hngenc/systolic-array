@@ -81,14 +81,17 @@ class MatMul extends Systolic {
     Seq((N2+1)*(N3+1)/((N2+1)*(N3+1)+1), (N3+1), 1)))
   */
 
+  /*
   // Output stationary
-  //  fix(c)
-  //  flowR(a)
-  //  flowD(b)
+  fix(c)
+  flowR(a)
+  flowD(b)
+  spaceTimeTransform()
+  */
 
-  //  fix(b)
-  //  flowD(c)
-  //  flowR(a)
+  // fix(b)
+  // flowD(c)
+  // flowR(a)
   /*
   val st = getSpaceTimeTransform
   println(st)

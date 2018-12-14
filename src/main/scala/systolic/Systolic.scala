@@ -126,6 +126,14 @@ class Systolic {
     }.map(_ take 6).map(seq => Seq(seq.take(3), seq.drop(3), s))
   }
 
+  def spaceTimeTransform(): Unit = {
+    getSpaceTimeTransform match {
+      case Nil => throw new Exception("No spacetime transforms could be found to meet your constraints")
+      case st :: Nil => spaceTimeTransform(st.map(_.map(_.toDouble)))
+      case sts => throw new Exception(s"Multiple possible spacetime transforms identified: $sts")
+    }
+  }
+
   def spaceTimeTransform(matrix: Seq[Seq[Double]]) {
     val P = matrix.init
     val s = Seq(matrix.last)

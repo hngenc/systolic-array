@@ -139,10 +139,35 @@ class MatMul extends Systolic {
     Seq(1,0,0),
     Seq(0,1,0),
     Seq(1,1,1)))
+}
 ```
 
 ### Constraints
+As your spacetime transforms become more complex, it can become increasingly difficult to come up with new ones in an ad-hoc manner, as it becomes harder and harder to visualize how each value in your matrix is going to affect the final shape of your array. Thus, this language allows users to set high-level constraints upon the dataflow they wish to achieve. The compiler will then attempt to generate a list of spacetime transforms that meet those constraints, and which are guaranteed to result in correctly functioning hardware (although there may be other valid spacetime transforms that the compiler misses).
 
+To set a constraint for the direction in which a variable should flow, use the `flow(v, (dx, dy))` method, which constrains a variable _v_ to travel _dx_ columns to the right, and _dy_ rows down across the 2D array every cycle. There are also some more wrapper functions provided:
+
+```scala
+fix(v)   // flow(v, (0, 0))
+flowR(v) // flow(v, (0, 1))
+flowD(v) // flow(v, (1, 0))
+```
+
+For example, to create an output-stationary systolic array, without manually entering the transform, we can write:
+
+```scala
+class MatMul extends Systolic {
+  // Functional algorithm, as shown above
+  // ...
+  
+  fix(c)
+  flowR(a)
+  flowD(b)
+  spaceTimeTransform()
+}
+```
+
+If there are multiple transforms which meet your constraints, the compiler will require you to choose one explicitly.
 
 ## Compiler Output
 
