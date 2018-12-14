@@ -95,6 +95,23 @@ class MatMul extends Systolic {
 Once our functional algorithm has been described, we need a way to map it onto a 2D systolic array. The next section explains how.
 
 ## Spacetime Transforms
+Using our functional notation, we have now specified which iteration each MAC operation should occur in. We must now map these iteration vectors to _spacetime vectors_, (x, y, t), which describe the _x_ and _y_ coordinates on the 2D systolic array each MAC should occur in, as well as the time step, _t_, in which that operation should occur.
+
+![Generalized spacetime transform](https://latex.codecogs.com/gif.download?f%5CBigg%28%20%5Cbegin%7Bbmatrix%7D%20i%20%5C%5C%20j%20%5C%5C%20k%20%5C%5C%20%5Cend%7Bbmatrix%7D%5CBigg%29%20%3D%20%5Cbegin%7Bbmatrix%7D%20x%20%5C%5C%20y%20%5C%5C%20t%20%5C%5C%20%5Cend%7Bbmatrix%7D)
+
+It turns out that to simplify matters, we can concentrate on only the set of linear transforms:
+
+![Linear spacetime transform](https://latex.codecogs.com/gif.download?T%20%5Cbegin%7Bbmatrix%7D%20i%20%5C%5C%20j%20%5C%5C%20k%20%5C%5C%20%5Cend%7Bbmatrix%7D%20%3D%20%5Cbegin%7Bbmatrix%7D%20x%20%5C%5C%20y%20%5C%5C%20t%20%5C%5C%20%5Cend%7Bbmatrix%7D)
+
+where _T_ is a 3 by 3 matrix.
+
+The power of these spacetime transforms quickly becomes apparent. Simply by modifying _T_, even if the matrix multiply's functional algorithm remains completely unchanged, very different systolic arrays can be produced without sacrificing the functional correctness of our algorithm.
+
+* Output-stationary matrix multiply:
+
+  ![Output-stationary spacetime transformation](https://latex.codecogs.com/gif.download?T%20%3D%20%5Cbegin%7Bbmatrix%7D%201%20%26%200%20%26%200%20%5C%5C%200%20%26%201%20%26%200%20%5C%5C%201%20%26%201%20%26%201%20%5C%5C%20%5Cend%7Bbmatrix%7D)
+  
+  ![Output-stationary systolic array](images/output-stationary.png)
 
 ### Constraints
 

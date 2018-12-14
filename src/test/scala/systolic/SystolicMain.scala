@@ -43,13 +43,11 @@ class MatMul extends Systolic {
   C(i, j) := c(i, j, N3)
 
   // Space-time transformation
-  /*
   // Output-stationary
   spaceTimeTransform(Seq(
     Seq(1,0,0),
     Seq(0,1,0),
     Seq(1,1,1)))
-  */
 
   /*
   // Hexagonal
@@ -67,11 +65,13 @@ class MatMul extends Systolic {
     Seq(1,1,1)))
   */
 
+  /*
   // Single PE
   spaceTimeTransform(Seq(
     Seq(0,0,0),
     Seq(0,0,0),
     Seq((N2+1)*(N3+1),(N3+1),1)))
+  */
 
   // Two PEs
   /*
