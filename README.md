@@ -134,7 +134,7 @@ class MatMul extends Systolic {
   // Functional algorithm, as shown above
   // ...
   
-  // Output stationary spacetime transform
+  // Output-stationary spacetime transform
   spaceTimeTransform(Seq(
     Seq(1,0,0),
     Seq(0,1,0),
@@ -160,6 +160,7 @@ class MatMul extends Systolic {
   // Functional algorithm, as shown above
   // ...
   
+  // Output-stationary spacetime transform
   fix(c)
   flowR(a)
   flowD(b)
