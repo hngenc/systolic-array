@@ -16,6 +16,10 @@ case class Ref(local: Systolic#Local, direction: Seq[Int], fixed: Seq[Boolean], 
       case calc => local.calculation = calc
     }
   }
+
+  def :=(that: Int): Unit = {
+    // TODO
+  }
 }
 
 case class IRef(input: Systolic#Input, its: Seq[Systolic#Iterator]) extends Expr {

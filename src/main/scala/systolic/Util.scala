@@ -5,6 +5,12 @@ object Util {
     ls.foldLeft(Seq(Seq[T]()))((acc, x) => for (i <- acc; j <- x) yield i :+ j)
   }
 
+  def matmul(a: Seq[Seq[Double]], b: Seq[Seq[Int]]): Seq[Seq[Int]] = {
+    (for (row <- a)
+      yield for(col <- b.transpose)
+        yield row zip col map Function.tupled(_*_) sum) map(_ map (_.toInt))
+  }
+
   def matmul[A](a: Seq[Seq[A]], b: Seq[Seq[A]])(implicit n: Numeric[A]) = {
     import n._
     for (row <- a)
@@ -16,7 +22,7 @@ object Util {
 
   def permutationsSgn[T]: List[T] => List[(Int,List[T])] = {
     case Nil => List((1,Nil))
-    case xs => {
+    case xs =>
       for {
         (x, i) <- xs.zipWithIndex
         (sgn,ys) <- permutationsSgn(xs.take(i) ++ xs.drop(1 + i))
@@ -24,10 +30,13 @@ object Util {
         val sgni = sgn * (2 * (i%2) - 1)
         (sgni, (x :: ys))
       }
-    }
   }
 
-  def det(m:Seq[Seq[Int]]) = {
+  def det[A](m_ : Seq[Seq[A]])(implicit n: Numeric[A]) = {
+    import n._
+
+    val m = m_.map(_.map(_.toInt()))
+
     val summands =
       for {
         (sgn, sigma) <- permutationsSgn((0 to m.length - 1).toList).toList
