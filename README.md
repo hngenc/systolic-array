@@ -221,7 +221,7 @@ Then, we can once again come up with spacetime transforms that describe how matr
 
 we can use the language provided in this project to calculate the following mapping:
 
-![Mapping](images/bigger-storage.png)
+<img src="images/bigger-storage.png" alt="Mapping" height=375>
 
 This figure is particularly interesting because the black dots represent instances where the matrix multiply unit (MM) re-uses a cached submatrix which had been input before to compute the _c_ submatrices. Thus, we find that we can express both the mapping and the storage requirements imposed by that mapping using our functional equations and spacetime transforms.
 
@@ -241,7 +241,7 @@ C(i, j) = c(i, j, N3)
 
 Then, using the same spacetime transform as earlier, we obtain the following mapping:
 
-![Mapping](images/bigger-no-storage.png)
+<img src="images/bigger-no-storage.png" alt="Mapping" height=375>
 
 As we can see, in this case, there is no local re-use of _a_ and _b_.
 
@@ -251,7 +251,7 @@ We can also experiment with more and more complex mapping strategies. For exampl
 
 to generate the following mapping:
 
-![Mapping](images/bigger-2.png)
+<img src="images/bigger-2.png" alt="Mapping" width=500>
 
 The main takeaway is that the language provided makes it easy to experiment with different mapping strategies, since the input/output submatrix patterns are automatically generated.
 
