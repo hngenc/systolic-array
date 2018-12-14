@@ -110,20 +110,20 @@ The power of these spacetime transforms quickly becomes apparent. Simply by modi
 * Output-stationary matrix multiply:
 
   ![Output-stationary spacetime transformation](images/output-stationary-transform.gif)
-  
-  ![Output-stationary systolic array](images/output-stationary.png)
+
+  <img src="images/output-stationary.png" alt="Output-stationary systolic array" width=500>
 
 * Weight-stationary matrix multiply:
   
   ![Weight-stationary spacetime transformation](images/weight-stationary-transform.gif)
   
-  ![Weight-stationary systolic array](images/weight-stationary.png)
+  <img src="images/weight-stationary.png" alt="Weight-stationary systolic array" width=500>
 
 * Hexagonal matrix multiply:
 
   ![Hexagonal-stationary spacetime transformation](images/hexagonal-transform.gif)
   
-  ![Hexagonal-stationary systolic array](images/hexagonal.png)
+  <img src="images/hexagonal.png" alt="Hexagonal systolic array" width=500>
 
 Although all three examples above may ultimately compute the same outputs, they do so in very different ways. Not only do they differ in size or shape, but they also differ in how partial results "flow" throughout the array. In the first example, partial sums of _C_ are fixed to specific PEs, and accumulate in place, while in the others, the partial sums travel across the array, before exiting at the edges. Based on your particular objectives or limitations, one strategy may be more attractive than another.
 
