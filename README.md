@@ -97,11 +97,11 @@ Once our functional algorithm has been described, we need a way to map it onto a
 ## Spacetime Transforms
 Using our functional notation, we have now specified which iteration each MAC operation should occur in. We must now map these iteration vectors to _spacetime vectors_, (x, y, t), which describe the _x_ and _y_ coordinates on the 2D systolic array each MAC should occur in, as well as the time step, _t_, in which that operation should occur.
 
-![Generalized spacetime transform](https://latex.codecogs.com/gif.download?f%5CBigg%28%20%5Cbegin%7Bbmatrix%7D%20i%20%5C%5C%20j%20%5C%5C%20k%20%5C%5C%20%5Cend%7Bbmatrix%7D%5CBigg%29%20%3D%20%5Cbegin%7Bbmatrix%7D%20x%20%5C%5C%20y%20%5C%5C%20t%20%5C%5C%20%5Cend%7Bbmatrix%7D)
+![Generalized spacetime transform](images/generalized-transform.gif)
 
 It turns out that to simplify matters, we can concentrate on only the set of linear transforms:
 
-![Linear spacetime transform](https://latex.codecogs.com/gif.download?T%20%5Cbegin%7Bbmatrix%7D%20i%20%5C%5C%20j%20%5C%5C%20k%20%5C%5C%20%5Cend%7Bbmatrix%7D%20%3D%20%5Cbegin%7Bbmatrix%7D%20x%20%5C%5C%20y%20%5C%5C%20t%20%5C%5C%20%5Cend%7Bbmatrix%7D)
+![Linear spacetime transform](images/linear-transform.gif)
 
 where _T_ is a 3 by 3 matrix.
 
