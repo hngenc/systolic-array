@@ -4,7 +4,7 @@ A Systolic(ish) Hardware Description Language
 This (as-yet-unnamed) project provides a Scala-embedded DSL which can be used to describe _systolic arrays_, a type of highly-parallel processor. The language helps users to separate the _functional correctness_ of their design from the _dataflow_ which it implements, and enables users to quickly iterate over many different dataflows to find the one which best suits their purposes.
 
 ## Introduction
-With the end of Moore's Law, CPU performance is no longer increasing at the speed it once did. To run compute-intensive workloads today, computer architects are increasingly turning towards specialized hardware accelerators, especially in cases where there is massive parallelism or locality that traditional CPUs are ill-equipped to exploit. Systolic arrays are one such type of hardware accelerator; they have successfully been used to accelerate critical algorithms such as convolution<sup>[Stanford]</sup>, matrix multiplication<sup>[TPU]</sup>, sorting<sup>[SORT]</sup> and many more, both in industry and in academia.
+With the end of Moore's Law, CPU performance is no longer increasing at the speed it once did. To run compute-intensive workloads today, computer architects are increasingly turning towards specialized hardware accelerators, especially in cases where there is massive parallelism or locality that traditional CPUs are ill-equipped to exploit. Systolic arrays are one such type of hardware accelerator; they have successfully been used to accelerate important algorithms such as convolution<sup>[1]</sup>, matrix multiplication<sup>[2]</sup>, sorting<sup>[3]</sup> and many more, both in industry and in academia.
 
 Systolic arrays are two-dimensional arrays of small processing units (called _PEs_) carrying out the same function, which, in most cases, communicate only with the PEs directly adjacent to themselves. Thus, they help to lower communication costs, and they shine with workloads that exhibit high locality where data can be shared across many adjacent PEs within the same array.
 
@@ -195,17 +195,82 @@ Your output pattern for c is:
 ```
 
 ## Mapping Larger Matrices
+The output-stationary matrix we built above can only generate output matrices of size _N1_ by _N2_. In general, any of the matrices we build may be bounded by any (or all) of the initial loop bound indices. However, it is unlikely that we will know, while designing our matrix multiply unit, what the maximum size will be of the matrices that we wish to compute later. Thus, it becomes necessary to find ways to map bigger matrices into smaller matrix-multiply arrays.
 
+For output- and weight-stationary arrays, this is easy to do in an ad-hoc way. However, without a formal way of expressing the different possible mapping strategies, it becomes difficult to perform any kind of design-space-exploration, which is especially important since mapping strategies may influence architectural characteristics like memory hierarchies.
 
-## Conclusion
+Fortunately, it turns out that we can re-use the concepts we have learned so far to express different possible mapping strategies for bigger matrices. For example, we can copy the earlier matrix multiplication equation we had, but treat _a_, _b_, and _c_ as submatrices instead of scalar values:
+```
+// Input
+a(i, 0, k) = A(i, k)
+b(0, j, k) = B(k, j)
+c(i, j, 0) = 0
+
+// Calculation
+a(i, j, k) = a(i, j-1, k)
+b(i, j, k) = b(i-1, j, k)
+c(i, j, k) = c(i, j, k-1) + A(i, k) * B (k, j)
+
+// Output
+C(i, j) = c(i, j, N3)
+```
+
+Then, we can once again come up with spacetime transforms that describe how matrix multiplications can be performed on smaller matrices to construct a larger matrix. For example, for the following spacetime transform:
+
+![Spacetime transform](images/bigger-transform.png)
+
+we can use the language provided in this project to calculate the following mapping:
+
+![Mapping](images/bigger-storage.png)
+
+This figure is particularly interesting because the black dots represent instances where the matrix multiply unit (MM) re-uses a cached submatrix which had been input before to compute the _c_ submatrices. Thus, we find that we can express both the mapping and the storage requirements imposed by that mapping using our functional equations and spacetime transforms.
+
+Suppose that rather than allocating extra area to store cached submatrices, we would rather re-input them externally, essentially trading storage burdens for extra communication costs. In this case, rather than changing the spacetime transformation, we can modify our functional algorithm to eliminate all re-use of _a_ and _b_, and to instead require _a_ and _b_ to be fed in externally every time step:
+```
+// Input
+a(i, j, k) = A(i, k)
+b(i, j, k) = B(k, j)
+c(i, j, 0) = 0
+
+// Calculation
+c(i, j, k) = c(i, j, k-1) + A(i, k) * B (k, j)
+
+// Output
+C(i, j) = c(i, j, N3)
+```
+
+Then, using the same spacetime transform as earlier, we obtain the following mapping:
+
+![Mapping](images/bigger-no-storage.png)
+
+As we can see, in this case, there is no local re-use of _a_ and _b_.
+
+We can also experiment with more and more complex mapping strategies. For example, if we have two matrix multiply units, and we wish to divide the computations equally between them, we can use the following transform:
+
+![Transform](images/bigger-2-transform.png)
+
+to generate the following mapping:
+
+![Mapping](images/bigger-2.png)
+
+The main takeaway is that the language provided makes it easy to experiment with different mapping strategies, since the input/output submatrix patterns are automatically generated.
+
+## Future Work
+The language works well currently as a proof of concept, but it lacks certain features that would give it practical value.
+
+More importantly, the language needs automated design space exploration capabilities, to help users find the best dataflows based on their objectives (which may simply be to maximize performance, minimize power, or reduce area).
+
+Additionally, the *Mapping Larger Matrices* section showed a case where it was necessary to slightly change the "functional algorithm" part of one's program to select a different mapping, even though the actual functional correctness of their algorithm was unchanged. This suggests that the decoupling between functional correctness and dataflow mapping was not extensive enough. In the future, the exact iterations in which variables are initialized from external inputs, versus when they are propagated locally, should also be based on parameters that can be tuned by an optimizer.
+
+Finally, although the compiler will currently print out the input/output patterns, the task of designing the software/hardware interface between the accelerator and the host computer still lies with the user. In the future, it would be ideal if the compiler also generated the software interface, just as it generates the hardware now.
 
 ## Further Reading
-[This chapter](http://compalg.inf.elte.hu/~tony/Informatikai-Konyvtar/03-Algorithms%20of%20Informatics%201,%202,%203/Systolic30May.pdf) from the _Algorithms of Informatics_ discusses, in a format suitable for beginners, how systolic arrays can be designed with a formal methodology.
+[This chapter](http://compalg.inf.elte.hu/~tony/Informatikai-Konyvtar/03-Algorithms%20of%20Informatics%201,%202,%203/Systolic30May.pdf) from _Algorithms of Informatics_ discusses, in a format suitable for beginners, how systolic arrays can be designed with a formal methodology.
 
 ## References
 
-[Stanford] Yang, Xuan, et al. "DNN Dataflow Choice Is Overrated." _arXiv preprint arXiv:1809.04070_ (2018).
+[1] Yang, Xuan, et al. "DNN Dataflow Choice Is Overrated." _arXiv preprint arXiv:1809.04070_ (2018).
 
-[TPU] Jouppi, Norman P., et al. "In-datacenter performance analysis of a tensor processing unit." _Computer Architecture (ISCA), 2017 ACM/IEEE 44th Annual International Symposium on._ IEEE, 2017.
+[2] Jouppi, Norman P., et al. "In-datacenter performance analysis of a tensor processing unit." _Computer Architecture (ISCA), 2017 ACM/IEEE 44th Annual International Symposium on._ IEEE, 2017.
 
-[SORT]: Schwiegelshohn, Uwe. "A shortperiodic two-dimensional systolic sorting algorithm." _Systolic Arrays, 1988., Proceedings of the International Conference on._ IEEE, 1988.
+[3]: Schwiegelshohn, Uwe. "A shortperiodic two-dimensional systolic sorting algorithm." _Systolic Arrays, 1988., Proceedings of the International Conference on._ IEEE, 1988.
